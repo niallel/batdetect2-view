@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "batdetect2-view"
+version = "0.1.0"
+description = "A visualization tool for batdetect2 output files"
+readme = "README.md"
+authors = [
+    {name = "Niall"}
+]
+license = "MIT"
+license-files = ["LICENSE"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.6"
+dependencies = [
+    "argparse",
+]
+
+[project.scripts]
+batdetect2-view = "batdetect2_view:main"
+
+[tool.setuptools]
+packages = ["batdetect2_view"] 
