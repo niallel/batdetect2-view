@@ -7,6 +7,7 @@ import webbrowser
 from io import StringIO
 import sys
 from contextlib import redirect_stdout
+from .create_visualization import create_html_visualization
 
 def parse_timestamp_from_filename(filename, date_format):
     # Extract filename without extension
@@ -101,9 +102,6 @@ def main():
         
         # Generate output filename based on time range, unless specified
         output_file = args.output if args.output else generate_output_filename(consolidated_data)
-        
-        # Import create_visualization here to avoid circular imports
-        from create_visualization import create_html_visualization
         
         # Create visualization
         print("Creating visualization...")
