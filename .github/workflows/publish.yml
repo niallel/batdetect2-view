@@ -20,12 +20,19 @@ jobs:
     - name: Clean build artifacts
       run: |
         rm -rf dist/ build/ *.egg-info/
+    - name: Debug version info
+      run: |
+        echo "Checking version in files:"
+        grep -r "__version__" .
+        grep -r "version =" pyproject.toml
     - name: Build package
       run: |
         python -m build --no-isolation
     - name: List dist contents
       run: |
         ls -la dist/
+        echo "Contents of dist directory:"
+        find dist -type f -exec echo {} \;
     - name: Publish package
       env:
         TWINE_USERNAME: __token__
