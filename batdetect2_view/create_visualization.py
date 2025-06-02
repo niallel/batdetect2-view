@@ -259,9 +259,6 @@ def create_html_visualization(data, output_file='bat_detections.html'):
     </div>
 
     <script>
-        // Debug: script loaded
-        console.log('Script loaded');
-
         // Store the original data
         const originalData = {{
             timestamps: {json.dumps(timestamps)},
@@ -371,18 +368,12 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                 .attr("transform", `translate(${{margin.left}},${{margin.top}})`);
 
             // Create scales
-            const x = d3.scaleTime()
-                .domain([
-                    new Date(data.timestamps[0]),  // First timestamp
-                    new Date(data.timestamps[data.timestamps.length - 1])  // Last timestamp
-                ])
-                .range([0, width]);
+            const firstTime = new Date(data.timestamps[0]);
+            const lastTime = new Date(data.timestamps[data.timestamps.length - 1]);
 
-            // Log time domain for debugging
-            console.log('Time domain min:', d3.min(data.timestamps));
-            console.log('Time domain max:', d3.max(data.timestamps));
-            console.log('First timestamp:', data.timestamps[0]);
-            console.log('Last timestamp:', data.timestamps[data.timestamps.length - 1]);
+            const x = d3.scaleTime()
+                .domain([firstTime, lastTime])
+                .range([0, width]);
 
             const y = isFreq ? 
                 d3.scaleLinear()
@@ -468,15 +459,12 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                     const high_freq = data.high_freqs[i];
                     const low_freq = data.low_freqs[i];
                     if (high_freq === undefined || low_freq === undefined) {{
-                        console.error(`Missing frequency data for detection at ${{t}}: high_freq=${{high_freq}}, low_freq=${{low_freq}}`);
                         return null;
                     }}
                     if (high_freq < 0 || low_freq < 0) {{
-                        console.error(`Negative frequency detected at ${{t}}: high_freq=${{high_freq}}, low_freq=${{low_freq}}`);
                         return null;
                     }}
                     if (high_freq < low_freq) {{
-                        console.error(`Invalid frequency range at ${{t}}: high_freq (${{high_freq}}) is less than low_freq (${{low_freq}})`);
                         return null;
                     }}
                     return {{
