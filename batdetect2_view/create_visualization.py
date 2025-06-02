@@ -191,19 +191,13 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         <div class="date-range">{date_range}</div>
         <div class="filter-container">
             <div class="filter-group">
-                <label for="detProbFilter">Detection Probability:</label>
-                <select id="detProbFilter" onchange="updateCharts()">
-                    <option value="0">All Detections ({len(det_probs)})</option>
-                    {''.join(f'<option value="{threshold}">> {int(threshold*100)}% ({sum(1 for p in det_probs if p >= threshold)})</option>'
+                <label for="probFilter">Probability Filter:</label>
+                <select id="probFilter" onchange="updateCharts()">
+                    <option value="0,0">All</option>
+                    {''.join(f'<option value="{threshold},0">Detections > {int(threshold*100)}% ({sum(1 for p in det_probs if p >= threshold)})</option>'
                     for threshold in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
                     if sum(1 for p in det_probs if p >= threshold) > 0)}
-                </select>
-            </div>
-            <div class="filter-group">
-                <label for="classProbFilter">Species Probability:</label>
-                <select id="classProbFilter" onchange="updateCharts()">
-                    <option value="0">All Species ({len(class_probs)})</option>
-                    {''.join(f'<option value="{threshold}">> {int(threshold*100)}% ({sum(1 for p in class_probs if p >= threshold)})</option>'
+                    {''.join(f'<option value="0,{threshold}">Species > {int(threshold*100)}% ({sum(1 for p in class_probs if p >= threshold)})</option>'
                     for threshold in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
                     if sum(1 for p in class_probs if p >= threshold) > 0)}
                 </select>
@@ -493,8 +487,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         }}
 
         function updateCharts() {{
-            const minDetProb = parseFloat(document.getElementById('detProbFilter').value);
-            const minClassProb = parseFloat(document.getElementById('classProbFilter').value);
+            const [minDetProb, minClassProb] = document.getElementById('probFilter').value.split(',').map(Number);
             const filteredData = filterData(minDetProb, minClassProb);
 
             // Update time charts
