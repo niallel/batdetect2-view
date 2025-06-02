@@ -214,6 +214,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         <div class="chart-container">
             <h2>Detections Over Time (Species Probability)</h2>
             <div id="speciesTimeChart"></div>
+            <div id="speciesTimeLegend" class="species-legend"></div>
         </div>
 
         <div class="chart-container">
@@ -252,6 +253,13 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         // Mapping of scientific names to common names
         const speciesNames = {json.dumps(species_names)};
 
+        // Create a consistent color mapping for species
+        const speciesColors = {{}};
+        Object.keys(speciesNames).forEach((species, index) => {{
+            const hue = (index * 137.5) % 360; // Golden angle approximation
+            speciesColors[species] = `hsla(${{hue}}, 70%, 65%, 0.7)`;
+        }});
+
         // Initialize charts
         let speciesChart, detProbChart, classProbChart, hourChart;
 
@@ -274,9 +282,6 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                 }}
             }});
 
-            // Debug: log chart data
-            console.log('Creating species pie chart with data:', chartData);
-
             // Create pie chart
             speciesChart = new Chart(document.getElementById('speciesChart'), {{
                 type: 'pie',
@@ -284,11 +289,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                     labels: chartData.map(d => d.label),
                     datasets: [{{
                         data: chartData.map(d => d.value),
-                        backgroundColor: chartData.map((_, i) => {{
-                            // Generate distinct colors using HSL
-                            const hue = (i * 137.5) % 360; // Golden angle approximation
-                            return `hsla(${{hue}}, 70%, 65%, 0.7)`;
-                        }})
+                        backgroundColor: chartData.map(d => speciesColors[d.label.split(' (')[0]])
                     }}]
                 }},
                 options: {{
@@ -334,6 +335,10 @@ def create_html_visualization(data, output_file='bat_detections.html'):
 
             // Clear previous chart
             d3.select(`#${{chartId}}`).selectAll("*").remove();
+            if (isSpeciesProb) {{
+                // Clear previous legend
+                document.getElementById('speciesTimeLegend').innerHTML = '';
+            }}
 
             // Create SVG
             const svg = d3.select(`#${{chartId}}`)
@@ -425,7 +430,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                 .attr("cx", d => x(new Date(d.timestamp)))
                 .attr("cy", d => y(isSpeciesProb ? d.class_prob : d.det_prob))
                 .attr("r", 4)
-                .style("fill", "rgba(54, 162, 235, 0.7)")
+                .style("fill", d => isSpeciesProb ? speciesColors[d.species] : "rgba(54, 162, 235, 0.7)")
                 .on("mouseover", function(event, d) {{
                     tooltip.transition()
                         .duration(200)
@@ -439,6 +444,21 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                         .duration(500)
                         .style("opacity", 0);
                 }});
+
+            // Add legend for species probability chart
+            if (isSpeciesProb) {{
+                const legendDiv = document.getElementById('speciesTimeLegend');
+                // Get unique species in order of appearance
+                const uniqueSpecies = Array.from(new Set(data.species));
+                uniqueSpecies.forEach(species => {{
+                    const color = speciesColors[species];
+                    const label = speciesNames[species] ? `${{species}} (${{speciesNames[species]}})` : species;
+                    const item = document.createElement('div');
+                    item.className = 'legend-item';
+                    item.innerHTML = `<span class="legend-color" style="background:${{color}}"></span>${{label}}`;
+                    legendDiv.appendChild(item);
+                }});
+            }}
         }}
 
         function filterData(minDetProb, minClassProb) {{
