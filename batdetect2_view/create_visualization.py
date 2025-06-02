@@ -14,6 +14,8 @@ def create_html_visualization(data, output_file='bat_detections.html'):
     class_probs = []  # Add class probabilities
     hours = [0] * 24  # Count of detections per hour
     species_list = []  # Store species for each detection
+    high_freqs = []  # Store high frequencies
+    low_freqs = []   # Store low frequencies
     
     # Mapping of scientific names to common names
     species_names = {
@@ -64,6 +66,10 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         
         # Count by hour
         hours[dt.hour] += 1
+        
+        # Collect high and low frequencies
+        high_freqs.append(detection['high_freq'])
+        low_freqs.append(detection['low_freq'])
 
     # Calculate date range
     if timestamps:
@@ -239,6 +245,11 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             <h2>Species by Hour of Day</h2>
             <canvas id="speciesHourChart"></canvas>
         </div>
+
+        <div class="chart-container">
+            <h2>Frequency Distribution</h2>
+            <canvas id="freqDistChart"></canvas>
+        </div>
     </div>
 
     <script>
@@ -251,7 +262,9 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             species: {json.dumps(species_list)},
             det_probs: {json.dumps(det_probs)},
             class_probs: {json.dumps(class_probs)},
-            hours: {json.dumps(hours)}
+            hours: {json.dumps(hours)},
+            high_freqs: {json.dumps(high_freqs)},
+            low_freqs: {json.dumps(low_freqs)}
         }};
         // Mapping of scientific names to common names
         const speciesNames = {json.dumps(species_names)};
@@ -264,7 +277,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         }});
 
         // Initialize charts
-        let speciesChart, probChart, hourChart, speciesHourChart;
+        let speciesChart, probChart, hourChart, speciesHourChart, freqDistChart;
 
         function createSpeciesChart(data) {{
             // Destroy existing chart if it exists
@@ -470,7 +483,9 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                 species: [],
                 det_probs: [],
                 class_probs: [],
-                hours: new Array(24).fill(0)
+                hours: new Array(24).fill(0),
+                high_freqs: [],
+                low_freqs: []
             }};
 
             // First collect all detections that meet both probability thresholds
@@ -481,7 +496,9 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                         timestamp: originalData.timestamps[i],
                         species: originalData.species[i],
                         det_prob: originalData.det_probs[i],
-                        class_prob: originalData.class_probs[i]
+                        class_prob: originalData.class_probs[i],
+                        high_freq: originalData.high_freqs[i],
+                        low_freq: originalData.low_freqs[i]
                     }});
                 }}
             }}
@@ -492,6 +509,8 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                 filteredData.species.push(detection.species);
                 filteredData.det_probs.push(detection.det_prob);
                 filteredData.class_probs.push(detection.class_prob);
+                filteredData.high_freqs.push(detection.high_freq);
+                filteredData.low_freqs.push(detection.low_freq);
                 
                 const dt = new Date(detection.timestamp);
                 filteredData.hours[dt.getHours()]++;
@@ -507,6 +526,57 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                 ...filteredData,
                 speciesCounts: speciesCounts
             }};
+        }}
+
+        function createFreqDistChart(highFreqs, lowFreqs) {{
+            // Define binning
+            const minFreq = 0;
+            const maxFreq = 384;
+            const binSize = 5;
+            const numBins = Math.ceil((maxFreq - minFreq) / binSize);
+            const freqBins = Array(numBins).fill(0);
+
+            // Combine and bin all frequencies (convert Hz to kHz)
+            [...highFreqs, ...lowFreqs].forEach(f => {{
+                const f_khz = f / 1000;
+                if (f_khz >= minFreq && f_khz <= maxFreq) {{
+                    const bin = Math.floor((f_khz - minFreq) / binSize);
+                    freqBins[bin]++;
+                }}
+            }});
+
+            // Bin labels
+            const binLabels = Array.from({{length: numBins}}, (_, i) => `${{minFreq + i*binSize}}-${{minFreq + (i+1)*binSize}} kHz`);
+
+            // Create or update chart
+            if (freqDistChart) freqDistChart.destroy();
+            freqDistChart = new Chart(document.getElementById('freqDistChart'), {{
+                type: 'bar',
+                data: {{
+                    labels: binLabels,
+                    datasets: [{{
+                        label: 'Frequency Distribution',
+                        data: freqBins,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)'
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    plugins: {{
+                        legend: {{ position: 'top' }},
+                        title: {{ display: true, text: 'Frequency Distribution (kHz)' }}
+                    }},
+                    scales: {{
+                        y: {{
+                            beginAtZero: true,
+                            title: {{ display: true, text: 'Count' }}
+                        }},
+                        x: {{
+                            title: {{ display: true, text: 'Frequency Range (kHz)' }}
+                        }}
+                    }}
+                }}
+            }});
         }}
 
         function updateCharts() {{
@@ -576,6 +646,8 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                 backgroundColor: speciesColors[species]
             }}));
             speciesHourChart.update();
+
+            createFreqDistChart(filteredData.high_freqs, filteredData.low_freqs);
         }}
 
         // Initialize charts
@@ -727,6 +799,8 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                     }}
                 }}
             }});
+
+            createFreqDistChart(originalData.high_freqs, originalData.low_freqs);
         }});
     </script>
 </body>
