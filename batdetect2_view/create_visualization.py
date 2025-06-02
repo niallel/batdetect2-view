@@ -351,7 +351,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         // Create D3 time series chart
         function createTimeChart(data, isSpeciesProb = false, isFreq = false) {{
             const chartId = isFreq ? 'freqTimeChart' : (isSpeciesProb ? 'speciesTimeChart' : 'timeChart');
-            const margin = {{top: 20, right: 30, bottom: 30, left: 40}};
+            const margin = {{top: 20, right: 30, bottom: 90, left: 80}};
             const width = document.getElementById(chartId).clientWidth - margin.left - margin.right;
             const height = 400 - margin.top - margin.bottom;
 
@@ -423,7 +423,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                 .tickFormat(d3.timeFormat("%Y-%m-%d %H:%M"));
 
             const yAxis = d3.axisLeft(y)
-                .ticks(5)
+                .ticks(isFreq ? 16 : 5)  // 16 ticks for frequency (384/25 + 1)
                 .tickFormat(d => isFreq ? d + " kHz" : d * 100 + "%");
 
             // Add axes
@@ -442,7 +442,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             // Add axis labels
             svg.append("text")
                 .attr("text-anchor", "middle")
-                .attr("transform", `translate(${{-margin.left/2}},${{height/2}}) rotate(-90)`)
+                .attr("transform", `translate(${{-margin.left/2 - 15}},${{height/2}}) rotate(-90)`)
                 .text(isFreq ? "Frequency (kHz)" : (isSpeciesProb ? "Species Probability" : "Detection Probability"));
 
             svg.append("text")
