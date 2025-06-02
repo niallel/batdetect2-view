@@ -223,13 +223,8 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         </div>
 
         <div class="chart-container">
-            <h2>Detection Probability Distribution</h2>
-            <canvas id="detProbChart"></canvas>
-        </div>
-
-        <div class="chart-container">
-            <h2>Species Probability Distribution</h2>
-            <canvas id="classProbChart"></canvas>
+            <h2>Probability Distributions</h2>
+            <canvas id="probChart"></canvas>
         </div>
 
         <div class="chart-container">
@@ -261,7 +256,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         }});
 
         // Initialize charts
-        let speciesChart, detProbChart, classProbChart, hourChart;
+        let speciesChart, probChart, hourChart;
 
         function createSpeciesChart(data) {{
             // Destroy existing chart if it exists
@@ -518,30 +513,38 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             createSpeciesChart(filteredData.speciesCounts);
 
             // Update probability charts
-            const detProbBins = [0, 0, 0, 0, 0];
-            const classProbBins = [0, 0, 0, 0, 0];
+            const detProbBins = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            const classProbBins = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             
             originalData.det_probs.forEach(p => {{
-                if (p < 0.2) detProbBins[0]++;
-                else if (p < 0.4) detProbBins[1]++;
-                else if (p < 0.6) detProbBins[2]++;
-                else if (p < 0.8) detProbBins[3]++;
-                else detProbBins[4]++;
+                if (p < 0.1) detProbBins[0]++;
+                else if (p < 0.2) detProbBins[1]++;
+                else if (p < 0.3) detProbBins[2]++;
+                else if (p < 0.4) detProbBins[3]++;
+                else if (p < 0.5) detProbBins[4]++;
+                else if (p < 0.6) detProbBins[5]++;
+                else if (p < 0.7) detProbBins[6]++;
+                else if (p < 0.8) detProbBins[7]++;
+                else if (p < 0.9) detProbBins[8]++;
+                else detProbBins[9]++;
             }});
             
             originalData.class_probs.forEach(p => {{
-                if (p < 0.2) classProbBins[0]++;
-                else if (p < 0.4) classProbBins[1]++;
-                else if (p < 0.6) classProbBins[2]++;
-                else if (p < 0.8) classProbBins[3]++;
-                else classProbBins[4]++;
+                if (p < 0.1) classProbBins[0]++;
+                else if (p < 0.2) classProbBins[1]++;
+                else if (p < 0.3) classProbBins[2]++;
+                else if (p < 0.4) classProbBins[3]++;
+                else if (p < 0.5) classProbBins[4]++;
+                else if (p < 0.6) classProbBins[5]++;
+                else if (p < 0.7) classProbBins[6]++;
+                else if (p < 0.8) classProbBins[7]++;
+                else if (p < 0.9) classProbBins[8]++;
+                else classProbBins[9]++;
             }});
             
-            detProbChart.data.datasets[0].data = detProbBins;
-            detProbChart.update();
-            
-            classProbChart.data.datasets[0].data = classProbBins;
-            classProbChart.update();
+            probChart.data.datasets[0].data = detProbBins;
+            probChart.data.datasets[1].data = classProbBins;
+            probChart.update();
 
             // Update hour chart
             hourChart.data.datasets[0].data = filteredData.hours;
@@ -557,22 +560,45 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             // Initial species chart
             createSpeciesChart({json.dumps(species)});
 
-            // Detection probability histogram
-            detProbChart = new Chart(document.getElementById('detProbChart'), {{
+            // Combined probability distribution chart
+            probChart = new Chart(document.getElementById('probChart'), {{
                 type: 'bar',
                 data: {{
-                    labels: ['0-20%', '20-40%', '40-60%', '60-80%', '80-100%'],
-                    datasets: [{{
-                        label: 'Number of Detections',
-                        data: {json.dumps([
-                            sum(1 for p in det_probs if 0 <= p < 0.2),
-                            sum(1 for p in det_probs if 0.2 <= p < 0.4),
-                            sum(1 for p in det_probs if 0.4 <= p < 0.6),
-                            sum(1 for p in det_probs if 0.6 <= p < 0.8),
-                            sum(1 for p in det_probs if 0.8 <= p <= 1.0)
-                        ])},
-                        backgroundColor: 'rgba(75, 192, 192, 0.7)'
-                    }}]
+                    labels: ['0-10%', '10-20%', '20-30%', '30-40%', '40-50%', '50-60%', '60-70%', '70-80%', '80-90%', '90-100%'],
+                    datasets: [
+                        {{
+                            label: 'Detection Probability',
+                            data: {json.dumps([
+                                sum(1 for p in det_probs if 0 <= p < 0.1),
+                                sum(1 for p in det_probs if 0.1 <= p < 0.2),
+                                sum(1 for p in det_probs if 0.2 <= p < 0.3),
+                                sum(1 for p in det_probs if 0.3 <= p < 0.4),
+                                sum(1 for p in det_probs if 0.4 <= p < 0.5),
+                                sum(1 for p in det_probs if 0.5 <= p < 0.6),
+                                sum(1 for p in det_probs if 0.6 <= p < 0.7),
+                                sum(1 for p in det_probs if 0.7 <= p < 0.8),
+                                sum(1 for p in det_probs if 0.8 <= p < 0.9),
+                                sum(1 for p in det_probs if 0.9 <= p <= 1.0)
+                            ])},
+                            backgroundColor: 'rgba(75, 192, 192, 0.7)'
+                        }},
+                        {{
+                            label: 'Species Probability',
+                            data: {json.dumps([
+                                sum(1 for p in class_probs if 0 <= p < 0.1),
+                                sum(1 for p in class_probs if 0.1 <= p < 0.2),
+                                sum(1 for p in class_probs if 0.2 <= p < 0.3),
+                                sum(1 for p in class_probs if 0.3 <= p < 0.4),
+                                sum(1 for p in class_probs if 0.4 <= p < 0.5),
+                                sum(1 for p in class_probs if 0.5 <= p < 0.6),
+                                sum(1 for p in class_probs if 0.6 <= p < 0.7),
+                                sum(1 for p in class_probs if 0.7 <= p < 0.8),
+                                sum(1 for p in class_probs if 0.8 <= p < 0.9),
+                                sum(1 for p in class_probs if 0.9 <= p <= 1.0)
+                            ])},
+                            backgroundColor: 'rgba(153, 102, 255, 0.7)'
+                        }}
+                    ]
                 }},
                 options: {{
                     scales: {{
@@ -586,44 +612,13 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                         x: {{
                             title: {{
                                 display: true,
-                                text: 'Detection Probability'
+                                text: 'Probability Range'
                             }}
                         }}
-                    }}
-                }}
-            }});
-
-            // Species probability histogram
-            classProbChart = new Chart(document.getElementById('classProbChart'), {{
-                type: 'bar',
-                data: {{
-                    labels: ['0-20%', '20-40%', '40-60%', '60-80%', '80-100%'],
-                    datasets: [{{
-                        label: 'Number of Detections',
-                        data: {json.dumps([
-                            sum(1 for p in class_probs if 0 <= p < 0.2),
-                            sum(1 for p in class_probs if 0.2 <= p < 0.4),
-                            sum(1 for p in class_probs if 0.4 <= p < 0.6),
-                            sum(1 for p in class_probs if 0.6 <= p < 0.8),
-                            sum(1 for p in class_probs if 0.8 <= p <= 1.0)
-                        ])},
-                        backgroundColor: 'rgba(153, 102, 255, 0.7)'
-                    }}]
-                }},
-                options: {{
-                    scales: {{
-                        y: {{
-                            beginAtZero: true,
-                            title: {{
-                                display: true,
-                                text: 'Number of Detections'
-                            }}
-                        }},
-                        x: {{
-                            title: {{
-                                display: true,
-                                text: 'Species Probability'
-                            }}
+                    }},
+                    plugins: {{
+                        legend: {{
+                            position: 'top'
                         }}
                     }}
                 }}
