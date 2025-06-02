@@ -5,6 +5,7 @@ import sys
 from datetime import datetime
 from .batdetect2_view import consolidate_detections
 from .create_visualization import create_html_visualization
+from . import __version__
 
 def generate_output_filename(data):
     if not data['annotation']:
@@ -28,6 +29,8 @@ def main():
                       %%H for hour, %%M for minute, %%S for second
                       Example: %%Y%%m%%d_%%H%%M%%S for YYYYMMDD_HHMMSS''')
     parser.add_argument('--output', '-o', default=None, help='Output HTML file name (default: batdetect2-[start]-[end].html)')
+    parser.add_argument('--version', '-v', action='version',
+                      version=f'%(prog)s {__version__}')
     
     args = parser.parse_args()
     

@@ -153,6 +153,23 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             margin: 10px 0;
             padding: 10px;
         }}
+        .hour-charts-container {{
+            display: flex;
+            gap: 20px;
+            margin: 10px 0;
+        }}
+        .hour-chart {{
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 10px;
+        }}
+        @media (max-width: 800px) {{
+            .hour-charts-container {{
+                flex-direction: column;
+            }}
+        }}
         h2 {{
             color: #333;
             margin-top: 0;
@@ -213,6 +230,17 @@ def create_html_visualization(data, output_file='bat_detections.html'):
     </div>
     
     <div class="content">
+        <div class="hour-charts-container">
+            <div class="hour-chart">
+                <h2>Detections by Hour of Day</h2>
+                <canvas id="hourChart"></canvas>
+            </div>
+            <div class="hour-chart">
+                <h2>Species by Hour of Day</h2>
+                <canvas id="speciesHourChart"></canvas>
+            </div>
+        </div>
+
         <div class="chart-container">
             <h2>Detections Over Time (Detection Probability)</h2>
             <div id="timeChart"></div>
@@ -240,16 +268,6 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         <div class="chart-container">
             <h2>Probability Distributions</h2>
             <canvas id="probChart"></canvas>
-        </div>
-
-        <div class="chart-container">
-            <h2>Detections by Hour of Day</h2>
-            <canvas id="hourChart"></canvas>
-        </div>
-
-        <div class="chart-container">
-            <h2>Species by Hour of Day</h2>
-            <canvas id="speciesHourChart"></canvas>
         </div>
 
         <div class="chart-container">
@@ -888,7 +906,11 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                     }},
                     plugins: {{
                         legend: {{
-                            position: 'right'
+                            position: 'right',
+                            labels: {{
+                                boxWidth: 12,
+                                padding: 10
+                            }}
                         }}
                     }}
                 }}
@@ -913,6 +935,8 @@ def main():
     parser.add_argument('input_file', help='Input JSON file with bat detections')
     parser.add_argument('--output', '-o', default='bat_detections.html',
                       help='Output HTML file (default: bat_detections.html)')
+    parser.add_argument('--version', '-v', action='version',
+                      version=f'%(prog)s {__version__}')
     
     args = parser.parse_args()
     
