@@ -4,10 +4,16 @@ This directory contains scripts for processing bat detection data and creating v
 
 ## Installation
 
-You can install the package using pip:
+Install directly from PyPI:
 
 ```bash
 pip install batdetect2-view
+```
+
+To upgrade to the latest version:
+
+```bash
+pip install --upgrade batdetect2-view
 ```
 
 ## Usage
