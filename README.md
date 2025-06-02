@@ -2,6 +2,9 @@
 
 This directory contains scripts for processing bat detection data and creating visualizations using the output from [batdetect2](https://github.com/macaodha/batdetect2)
 
+## Example output
+There is an example you can see here, it was from data processed by [batdetect2](https://github.com/macaodha/batdetect2) at 0.3 probability, so doesn't show the detection probabilities below 30%.
+
 ## Installation
 
 Install directly from PyPI:
