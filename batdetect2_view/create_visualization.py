@@ -231,6 +231,11 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             <h2>Detections by Hour of Day</h2>
             <canvas id="hourChart"></canvas>
         </div>
+
+        <div class="chart-container">
+            <h2>Species by Hour of Day</h2>
+            <canvas id="speciesHourChart"></canvas>
+        </div>
     </div>
 
     <script>
@@ -256,7 +261,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         }});
 
         // Initialize charts
-        let speciesChart, probChart, hourChart;
+        let speciesChart, probChart, hourChart, speciesHourChart;
 
         function createSpeciesChart(data) {{
             // Destroy existing chart if it exists
@@ -549,6 +554,25 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             // Update hour chart
             hourChart.data.datasets[0].data = filteredData.hours;
             hourChart.update();
+
+            // Update species by hour chart
+            const speciesByHour = Array(24).fill().map(() => ({{}}));
+            for (let i = 0; i < filteredData.timestamps.length; i++) {{
+                const hour = new Date(filteredData.timestamps[i]).getHours();
+                const species = filteredData.species[i];
+                speciesByHour[hour][species] = (speciesByHour[hour][species] || 0) + 1;
+            }}
+
+            // Get all unique species
+            const allSpecies = [...new Set(filteredData.species)];
+            
+            // Update datasets
+            speciesHourChart.data.datasets = allSpecies.map(species => ({{
+                label: speciesNames[species] ? `${{species}} (${{speciesNames[species]}})` : species,
+                data: speciesByHour.map(hourData => hourData[species] || 0),
+                backgroundColor: speciesColors[species]
+            }}));
+            speciesHourChart.update();
         }}
 
         // Initialize charts
@@ -649,6 +673,53 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                                 display: true,
                                 text: 'Hour of Day'
                             }}
+                        }}
+                    }}
+                }}
+            }});
+
+            // Species by hour chart
+            const speciesByHour = Array(24).fill().map(() => ({{}}));
+            for (let i = 0; i < originalData.timestamps.length; i++) {{
+                const hour = new Date(originalData.timestamps[i]).getHours();
+                const species = originalData.species[i];
+                speciesByHour[hour][species] = (speciesByHour[hour][species] || 0) + 1;
+            }}
+
+            // Get all unique species
+            const allSpecies = [...new Set(originalData.species)];
+            
+            speciesHourChart = new Chart(document.getElementById('speciesHourChart'), {{
+                type: 'bar',
+                data: {{
+                    labels: {json.dumps([f'{h:02d}:00' for h in range(24)])},
+                    datasets: allSpecies.map(species => ({{
+                        label: speciesNames[species] ? `${{species}} (${{speciesNames[species]}})` : species,
+                        data: speciesByHour.map(hourData => hourData[species] || 0),
+                        backgroundColor: speciesColors[species]
+                    }}))
+                }},
+                options: {{
+                    scales: {{
+                        y: {{
+                            beginAtZero: true,
+                            stacked: true,
+                            title: {{
+                                display: true,
+                                text: 'Number of Detections'
+                            }}
+                        }},
+                        x: {{
+                            stacked: true,
+                            title: {{
+                                display: true,
+                                text: 'Hour of Day'
+                            }}
+                        }}
+                    }},
+                    plugins: {{
+                        legend: {{
+                            position: 'right'
                         }}
                     }}
                 }}
