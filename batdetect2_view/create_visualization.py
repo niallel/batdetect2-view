@@ -80,6 +80,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
 <html>
 <head>
     <title>Bat Detection Analysis</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 585'><g transform='translate(0,585) scale(0.1,-0.1)' fill='%23000' stroke='none'><path d='M9785 5728 c-2 -7 -22 -68 -45 -135 -313 -948 -940 -1649 -1822-2037 -209 -92 -598 -211 -618 -189 -4 4 -47 209 -96 456 -49 246 -92 446 -96 445 -4 -2 -93 -85 -197 -186 l-190 -182 -48 30 c-86 55 -167 73 -301 67 -75 -3 -135 -11 -166 -22 l-49 -18 -177 184 -177 184 -26 -85 c-14 -47 -83 -276 -152 -510 -69 -234 -131 -440 -136 -458 -13 -40 -11 -40 -214 25 -834 270-1466 781-1894 1533 -119 210 -278 599 -306 753 -4 20 -11 37 -15 37 -4 0-25 -21-46 -47 -59 -73 -199 -219 -294 -307 -463 -431 -1050 -712 -1700 -815 -151 -24 -345 -41 -483 -42 l-102 0 110 -23 c694 -145 1141 -501 1270 -1010 13 -50 26 -126 30 -169 6 -63 10 -77 22 -73 37 15 183 48 290 67 149 26 427 36 544 20 414 -59 707 -271 890 -646 67 -137 110 -263 139 -403 22 -112 40 -248 40 -308 l0 -42 92 55 c106 64 190 101 314 140 83 25 102 27 264 27 161 0 182 -2 265 -27 119 -36 288 -120 400 -199 111 -78 344 -308 454 -446 97 -123 245 -344 336 -502 77 -133 237 -457 286 -579 l34 -84 13 49 c126 473 374 815 792 1093 392 262 930 443 1499 506 80 8 145 17 146 18 1 1 12 56 24 122 138 724 488 1210 991 1374 267 88 596 92 886 11 64 -17 64 -17 68 4 30 154 92 301 178 423 160 227 434 471 793 705 200 131 357 220 635 361 140 71 247 127 238 123 -10 -3 -71 -13 -135 -23 -183 -27 -599 -24 -793 6 -383 58 -703 159 -1057 331 -252 122 -474 255 -646 387 -39 30 -59 40 -62 31z'/></g></svg>"/>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
@@ -143,8 +144,8 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin: 20px 0;
-            padding: 20px;
+            margin: 10px 0;
+            padding: 10px;
         }}
         h2 {{
             color: #333;
@@ -218,8 +219,10 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         </div>
 
         <div class="chart-container">
-            <h2>Species Distribution</h2>
-            <canvas id="speciesChart" width="400" height="400"></canvas>
+            <h2 style="margin: 0 0 10px 0;">Species Distribution</h2>
+            <div style="max-width: 1000px; margin: 0 auto;">
+                <canvas id="speciesChart" width="400" height="250"></canvas>
+            </div>
         </div>
 
         <div class="chart-container">
