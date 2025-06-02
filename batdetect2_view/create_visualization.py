@@ -225,6 +225,12 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         </div>
 
         <div class="chart-container">
+            <h2>Detections Over Time (Frequency)</h2>
+            <div id="freqTimeChart"></div>
+            <div id="freqTimeLegend" class="species-legend"></div>
+        </div>
+
+        <div class="chart-container">
             <h2 style="margin: 0 0 10px 0;">Species Distribution</h2>
             <div style="max-width: 1000px; margin: 0 auto;">
                 <canvas id="speciesChart" width="400" height="250"></canvas>
@@ -343,17 +349,17 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         }}
 
         // Create D3 time series chart
-        function createTimeChart(data, isSpeciesProb = false) {{
-            const chartId = isSpeciesProb ? 'speciesTimeChart' : 'timeChart';
+        function createTimeChart(data, isSpeciesProb = false, isFreq = false) {{
+            const chartId = isFreq ? 'freqTimeChart' : (isSpeciesProb ? 'speciesTimeChart' : 'timeChart');
             const margin = {{top: 20, right: 30, bottom: 30, left: 40}};
             const width = document.getElementById(chartId).clientWidth - margin.left - margin.right;
             const height = 400 - margin.top - margin.bottom;
 
             // Clear previous chart
             d3.select(`#${{chartId}}`).selectAll("*").remove();
-            if (isSpeciesProb) {{
+            if (isSpeciesProb || isFreq) {{
                 // Clear previous legend
-                document.getElementById('speciesTimeLegend').innerHTML = '';
+                document.getElementById(isFreq ? 'freqTimeLegend' : 'speciesTimeLegend').innerHTML = '';
             }}
 
             // Create SVG
@@ -366,23 +372,46 @@ def create_html_visualization(data, output_file='bat_detections.html'):
 
             // Create scales
             const x = d3.scaleTime()
-                .domain(d3.extent(data.timestamps, d => new Date(d)))
+                .domain([
+                    new Date(data.timestamps[0]),  // First timestamp
+                    new Date(data.timestamps[data.timestamps.length - 1])  // Last timestamp
+                ])
                 .range([0, width]);
 
-            const y = d3.scaleLinear()
-                .domain([0, 1])
-                .range([height, 0]);
+            // Log time domain for debugging
+            console.log('Time domain min:', d3.min(data.timestamps));
+            console.log('Time domain max:', d3.max(data.timestamps));
+            console.log('First timestamp:', data.timestamps[0]);
+            console.log('Last timestamp:', data.timestamps[data.timestamps.length - 1]);
+
+            const y = isFreq ? 
+                d3.scaleLinear()
+                    .domain([0, 384])  // Frequency range in kHz
+                    .range([height, 0]) :
+                d3.scaleLinear()
+                    .domain([0, 1])
+                    .range([height, 0]);
 
             // Create zoom behavior
             const zoom = d3.zoom()
                 .scaleExtent([0.5, 20])
                 .extent([[0, 0], [width, height]])
                 .on("zoom", (event) => {{
-                    svg.select(".x-axis").call(xAxis.scale(event.transform.rescaleX(x)));
-                    svg.select(".y-axis").call(yAxis.scale(event.transform.rescaleY(y)));
-                    svg.selectAll("circle")
-                        .attr("cx", d => event.transform.applyX(x(new Date(d.timestamp))))
-                        .attr("cy", d => event.transform.applyY(y(isSpeciesProb ? d.class_prob : d.det_prob)));
+                    const newX = event.transform.rescaleX(x);
+                    const newY = event.transform.rescaleY(y);
+                    svg.select(".x-axis").call(xAxis.scale(newX));
+                    svg.select(".y-axis").call(yAxis.scale(newY));
+                    if (isFreq) {{
+                        svg.selectAll("line")
+                            .attr("x1", d => newX(new Date(d.timestamp)))
+                            .attr("x2", d => newX(new Date(d.timestamp)))
+                            .attr("y1", d => newY(d.high_freq))
+                            .attr("y2", d => newY(d.low_freq));
+                    }} else {{
+                        svg.selectAll("circle")
+                            .attr("cx", d => newX(new Date(d.timestamp)))
+                            .attr("cy", d => newY(isSpeciesProb ? d.class_prob : d.det_prob));
+                    }}
                 }});
 
             // Add zoom behavior to SVG
@@ -395,7 +424,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
 
             const yAxis = d3.axisLeft(y)
                 .ticks(5)
-                .tickFormat(d => d * 100 + "%");
+                .tickFormat(d => isFreq ? d + " kHz" : d * 100 + "%");
 
             // Add axes
             svg.append("g")
@@ -414,7 +443,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             svg.append("text")
                 .attr("text-anchor", "middle")
                 .attr("transform", `translate(${{-margin.left/2}},${{height/2}}) rotate(-90)`)
-                .text(isSpeciesProb ? "Species Probability" : "Detection Probability");
+                .text(isFreq ? "Frequency (kHz)" : (isSpeciesProb ? "Species Probability" : "Detection Probability"));
 
             svg.append("text")
                 .attr("text-anchor", "middle")
@@ -433,37 +462,112 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                 .style("pointer-events", "none");
 
             // Add points
-            svg.selectAll("circle")
-                .data(data.timestamps.map((t, i) => ({{
-                    timestamp: t,
-                    species: data.species[i],
-                    det_prob: data.det_probs[i],
-                    class_prob: data.class_probs[i],
-                    common_name: speciesNames[data.species[i]] || ''
-                }})))
-                .enter()
-                .append("circle")
-                .attr("cx", d => x(new Date(d.timestamp)))
-                .attr("cy", d => y(isSpeciesProb ? d.class_prob : d.det_prob))
-                .attr("r", 4)
-                .style("fill", d => isSpeciesProb ? speciesColors[d.species] : "rgba(54, 162, 235, 0.7)")
-                .on("mouseover", function(event, d) {{
-                    tooltip.transition()
-                        .duration(200)
-                        .style("opacity", .9);
-                    tooltip.html(`Species: ${{d.species}}<br/>Common Name: ${{d.common_name || 'Unknown'}}<br/>Detection Probability: ${{(d.det_prob * 100).toFixed(1)}}%<br/>Species Probability: ${{(d.class_prob * 100).toFixed(1)}}%<br/>Time: ${{d.timestamp}}`)
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                }})
-                .on("mouseout", function(d) {{
-                    tooltip.transition()
-                        .duration(500)
-                        .style("opacity", 0);
-                }});
+            if (isFreq) {{
+                // For frequency chart, use lines
+                const freqData = data.timestamps.map((t, i) => {{
+                    const high_freq = data.high_freqs[i];
+                    const low_freq = data.low_freqs[i];
+                    if (high_freq === undefined || low_freq === undefined) {{
+                        console.error(`Missing frequency data for detection at ${{t}}: high_freq=${{high_freq}}, low_freq=${{low_freq}}`);
+                        return null;
+                    }}
+                    if (high_freq < 0 || low_freq < 0) {{
+                        console.error(`Negative frequency detected at ${{t}}: high_freq=${{high_freq}}, low_freq=${{low_freq}}`);
+                        return null;
+                    }}
+                    if (high_freq < low_freq) {{
+                        console.error(`Invalid frequency range at ${{t}}: high_freq (${{high_freq}}) is less than low_freq (${{low_freq}})`);
+                        return null;
+                    }}
+                    return {{
+                        timestamp: t,
+                        species: data.species[i],
+                        det_prob: data.det_probs[i],
+                        class_prob: data.class_probs[i],
+                        high_freq: high_freq / 1000,  // Convert to kHz
+                        low_freq: low_freq / 1000,   // Convert to kHz
+                        common_name: speciesNames[data.species[i]] || ''
+                    }};
+                }}).filter(d => d !== null);  // Remove any null entries
 
-            // Add legend for species probability chart
-            if (isSpeciesProb) {{
-                const legendDiv = document.getElementById('speciesTimeLegend');
+                // Sort data by timestamp to ensure proper ordering
+                freqData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                // Create a group for all lines
+                const lineGroup = svg.append("g")
+                    .attr("class", "frequency-lines");
+
+                // Add lines for each detection
+                lineGroup.selectAll("line")
+                    .data(freqData)
+                    .enter()
+                    .append("line")
+                    .attr("x1", d => x(new Date(d.timestamp)))
+                    .attr("x2", d => x(new Date(d.timestamp)))
+                    .attr("y1", d => y(d.high_freq))
+                    .attr("y2", d => y(d.low_freq))
+                    .attr("stroke", d => speciesColors[d.species])
+                    .attr("stroke-width", 2)
+                    .on("mouseover", function(event, d) {{
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", .9);
+                        tooltip.html(`Species: ${{d.species}}<br/>Common Name: ${{d.common_name || 'Unknown'}}<br/>Detection Probability: ${{(d.det_prob * 100).toFixed(1)}}%<br/>Species Probability: ${{(d.class_prob * 100).toFixed(1)}}%<br/>Frequency Range: ${{d.low_freq.toFixed(1)}} - ${{d.high_freq.toFixed(1)}} kHz<br/>Time: ${{d.timestamp}}`)
+                            .style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                    }})
+                    .on("mouseout", function(d) {{
+                        tooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0);
+                    }});
+
+                // Update zoom behavior to handle the line group
+                zoom.on("zoom", (event) => {{
+                    const newX = event.transform.rescaleX(x);
+                    const newY = event.transform.rescaleY(y);
+                    svg.select(".x-axis").call(xAxis.scale(newX));
+                    svg.select(".y-axis").call(yAxis.scale(newY));
+                    lineGroup.selectAll("line")
+                        .attr("x1", d => newX(new Date(d.timestamp)))
+                        .attr("x2", d => newX(new Date(d.timestamp)))
+                        .attr("y1", d => newY(d.high_freq))
+                        .attr("y2", d => newY(d.low_freq));
+                }});
+            }} else {{
+                // For probability charts, use circles
+                svg.selectAll("circle")
+                    .data(data.timestamps.map((t, i) => ({{
+                        timestamp: t,
+                        species: data.species[i],
+                        det_prob: data.det_probs[i],
+                        class_prob: data.class_probs[i],
+                        common_name: speciesNames[data.species[i]] || ''
+                    }})))
+                    .enter()
+                    .append("circle")
+                    .attr("cx", d => x(new Date(d.timestamp)))
+                    .attr("cy", d => y(isSpeciesProb ? d.class_prob : d.det_prob))
+                    .attr("r", 4)
+                    .style("fill", d => isSpeciesProb ? speciesColors[d.species] : "rgba(54, 162, 235, 0.7)")
+                    .on("mouseover", function(event, d) {{
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", .9);
+                        tooltip.html(`Species: ${{d.species}}<br/>Common Name: ${{d.common_name || 'Unknown'}}<br/>Detection Probability: ${{(d.det_prob * 100).toFixed(1)}}%<br/>Species Probability: ${{(d.class_prob * 100).toFixed(1)}}%<br/>Time: ${{d.timestamp}}`)
+                            .style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                    }})
+                    .on("mouseout", function(d) {{
+                        tooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0);
+                    }});
+            }}
+
+            // Add legend for species probability or frequency chart
+            if (isSpeciesProb || isFreq) {{
+                const legendDiv = document.getElementById(isFreq ? 'freqTimeLegend' : 'speciesTimeLegend');
                 // Get unique species in order of appearance
                 const uniqueSpecies = Array.from(new Set(data.species));
                 uniqueSpecies.forEach(species => {{
@@ -586,6 +690,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             // Update time charts
             createTimeChart(filteredData, false);  // Detection probability chart
             createTimeChart(filteredData, true);   // Species probability chart
+            createTimeChart(filteredData, false, true);  // Frequency chart
 
             // Update species chart
             createSpeciesChart(filteredData.speciesCounts);
@@ -655,6 +760,7 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             // Initial time charts
             createTimeChart(originalData, false);  // Detection probability chart
             createTimeChart(originalData, true);   // Species probability chart
+            createTimeChart(originalData, false, true);  // Frequency chart
 
             // Initial species chart
             createSpeciesChart({json.dumps(species)});
