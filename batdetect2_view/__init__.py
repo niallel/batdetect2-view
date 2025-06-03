@@ -2,7 +2,7 @@
 batdetect2-view - A visualization tool for batdetect2 output files
 """
 
-__version__ = "1.3.1"
+__version__ = "1.4.0"
 
 from .batdetect2_view import consolidate_detections
 from .create_visualization import create_html_visualization

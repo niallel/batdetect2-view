@@ -91,6 +91,8 @@ def create_html_visualization(data, output_file='bat_detections.html'):
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <style>
         body {{
             font-family: Arial, sans-serif;
@@ -129,6 +131,13 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             text-align: center;
             flex-grow: 1;
             margin: 0 20px;
+        }}
+        .date-range input {{
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
         }}
         .filter-container {{
             display: flex;
@@ -212,7 +221,9 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                 </g>
             </svg>
         </span>Bat Detection Analysis</h1>
-        <div class="date-range">{date_range}</div>
+        <div class="date-range">
+            <input type="text" id="dateRange" placeholder="Select date range...">
+        </div>
         <div class="filter-container">
             <div class="filter-group">
                 <label for="probFilter">Probability Filter:</label>
@@ -287,6 +298,26 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             high_freqs: {json.dumps(high_freqs)},
             low_freqs: {json.dumps(low_freqs)}
         }};
+
+        // Initialize date range picker
+        const firstTime = new Date(originalData.timestamps[0]);
+        const lastTime = new Date(originalData.timestamps[originalData.timestamps.length - 1]);
+        
+        flatpickr("#dateRange", {{
+            mode: "range",
+            dateFormat: "Y-m-d H:i",
+            enableTime: true,
+            time_24hr: true,
+            defaultDate: [firstTime, lastTime],
+            minDate: firstTime,
+            maxDate: lastTime,
+            onChange: function(selectedDates) {{
+                if (selectedDates.length === 2) {{
+                    updateCharts();
+                }}
+            }}
+        }});
+
         // Mapping of scientific names to common names
         const speciesNames = {json.dumps(species_names)};
 
@@ -598,10 +629,19 @@ def create_html_visualization(data, output_file='bat_detections.html'):
                 low_freqs: []
             }};
 
-            // First collect all detections that meet both probability thresholds
+            // Get selected date range
+            const dateRange = document.getElementById('dateRange')._flatpickr.selectedDates;
+            const startDate = dateRange[0];
+            const endDate = dateRange[1];
+
+            // First collect all detections that meet both probability thresholds and date range
             const validDetections = [];
             for (let i = 0; i < originalData.timestamps.length; i++) {{
-                if (originalData.det_probs[i] >= minDetProb && originalData.class_probs[i] >= minClassProb) {{
+                const timestamp = new Date(originalData.timestamps[i]);
+                if (originalData.det_probs[i] >= minDetProb && 
+                    originalData.class_probs[i] >= minClassProb &&
+                    timestamp >= startDate && 
+                    timestamp <= endDate) {{
                     validDetections.push({{
                         timestamp: originalData.timestamps[i],
                         species: originalData.species[i],
