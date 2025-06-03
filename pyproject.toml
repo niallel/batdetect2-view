@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "batdetect2-view"
-version = "1.4.0"
+version = "1.4.1"
 description = "A visualization tool for batdetect2 output files"
 readme = "README.md"
 authors = [

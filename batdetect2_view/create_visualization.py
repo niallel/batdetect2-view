@@ -730,6 +730,9 @@ def create_html_visualization(data, output_file='bat_detections.html'):
         }}
 
         function updateCharts() {{
+            // Show loading cursor
+            document.body.style.cursor = 'wait';
+            
             const [minDetProb, minClassProb] = document.getElementById('probFilter').value.split(',').map(Number);
             const filteredData = filterData(minDetProb, minClassProb);
 
@@ -799,6 +802,9 @@ def create_html_visualization(data, output_file='bat_detections.html'):
             speciesHourChart.update();
 
             createFreqDistChart(filteredData.high_freqs, filteredData.low_freqs);
+
+            // Reset cursor after all updates are complete
+            document.body.style.cursor = 'default';
         }}
 
         // Initialize charts
